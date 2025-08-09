@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcours d'Apprentissage en Ingénierie Biomédicale</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application uses a hub-and-spoke model. The main view (hub) presents the five core pillars as large, clickable cards for a clear overview. Clicking a pillar dynamically reveals its detailed content (the spoke) on the same page, using smooth scrolling. This structure was chosen to break down a dense curriculum into manageable, explorable sections, enhancing user navigation and preventing information overload compared to a simple linear document. Accordions are used within each section to further organize sub-themes, allowing users to focus on one topic at a time. A summary chart provides an initial visual comparison of the pillars' content weight. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: 5 pillars of biomedical learning. Goal: Compare the relative scope of each pillar. Viz: Horizontal Bar Chart (Chart.js/Canvas). Interaction: Tooltips on hover show the pillar's objective. Justification: Provides a quick visual summary of the curriculum's structure, helping users gauge the scope of each topic without needing raw numerical data.
+        - Report Info: Hierarchical text content (Pillar -> Sub-theme -> Details). Goal: Organize and inform. Presentation: Interactive Accordions. Interaction: Click to expand/collapse. Justification: Ideal for nested information, keeping the interface clean and allowing users to progressively disclose details.
+        - Report Info: Lists of equipment, standards, etc. Goal: Inform. Presentation: Styled lists and cards within accordions. Interaction: Standard click. Justification: Enhances readability and visual separation of distinct items.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF7;
+            color: #333;
+        }
+        .pillar-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .pillar-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .accordion-button.active + .accordion-content {
+            max-height: 1000px;
+        }
+        .section-title {
+            border-bottom: 2px solid #D1C4E9;
+            padding-bottom: 0.5rem;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">Parcours d'Apprentissage</h1>
+            <p class="text-lg text-gray-600 mt-2">Une exploration interactive des 5 piliers de l'ingénierie biomédicale.</p>
+        </header>
+
+        <main>
+            <section id="pillars-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
+            </section>
+            
+            <section id="chart-section" class="mb-16 bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold text-center text-gray-700 mb-4">Aperçu du Programme</h2>
+                <p class="text-center text-gray-500 mb-6">Cette visualisation représente l'étendue relative de chaque pilier, basée sur le nombre de sous-thèmes. Survolez les barres pour voir l'objectif de chaque pilier.</p>
+                <div class="chart-container">
+                    <canvas id="pillarsChart"></canvas>
+                </div>
+            </section>
+
+            <div id="pillars-details">
+            </div>
+        </main>
+
+        <footer class="text-center mt-16 text-gray-500">
+            <p>&copy; 2025 Parcours d'Apprentissage Biomédical. Tous droits réservés.</p>
+        </footer>
+    </div>
+
+    <script>
+        const learningData = [
+            {
+                id: "pilier1",
+                title: "Fondamentaux",
+                icon: "🔬",
+                description: "Biomédical et Biologie",
+                color: "bg-blue-100",
+                textColor: "text-blue-800",
+                objective: "Comprendre les bases scientifiques pour mieux appréhender les équipements et leur rôle dans les analyses.",
+                content: [
+                    {
+                        title: "Bases en biologie et microbiologie",
+                        details: [
+                            "Rappels : structure cellulaire, ADN/ARN, protéines, enzymes.",
+                            "Principaux agents pathogènes : bactéries, virus, champignons, parasites.",
+                            "Concepts clés : culture cellulaire, amplification, sérodiagnostic."
+                        ]
+                    },
+                    {
+                        title: "Techniques de laboratoire courantes",
+                        details: [
+                            "Culture microbiologique et identification.",
+                            "PCR, qPCR, RT-PCR, séquençage.",
+                            "Immuno-essais : ELISA, Western blot.",
+                            "Colorations (Gram, Ziehl, etc.)."
+                        ]
+                    },
+                    {
+                        title: "Applications spécifiques Institut Pasteur",
+                        details: [
+                            "Surveillance épidémiologique.",
+                            "Diagnostic de maladies infectieuses.",
+                            "Recherche et innovation."
+                        ]
+                    }
+                ],
+                resources: [
+                    "“Microbiology: A Laboratory Manual” (Cappuccino)",
+                    "Cours gratuits Institut Pasteur OpenCourseWare"
+                ]
+            },
+            {
+                id: "pilier2",
+                title: "Instrumentation",
+                icon: "⚙️",
+                description: "Équipements et Maintenance",
+                color: "bg-green-100",
+                textColor: "text-green-800",
+                objective: "Connaître le fonctionnement, l’entretien et la validation des appareils clés.",
+                content: [
+                    {
+                        title: "Principaux équipements de laboratoire",
+                        details: [
+                            "Thermocycleurs (PCR), séquenceurs.",
+                            "Automates d’immunologie et biochimie (Architect, Cobas…).",
+                            "Hottes PSM II & III, hottes à flux laminaire.",
+                            "Centrifugeuses, spectrophotomètres.",
+                            "Microscopie (optique, fluorescence)."
+                        ]
+                    },
+                    {
+                        title: "Principes de fonctionnement",
+                        details: [
+                            "Mécanique, électronique, capteurs.",
+                            "Logiciels intégrés et interfaces."
+                        ]
+                    },
+                    {
+                        title: "Maintenance et métrologie",
+                        details: [
+                            "Maintenance préventive et corrective.",
+                            "Étapes de qualification : IQ, OQ, PQ.",
+                            "Calibration et traçabilité des mesures."
+                        ]
+                    }
+                ],
+                resources: [
+                    "Manuels constructeurs + fiches techniques",
+                    "Guide OMS sur la maintenance biomédicale"
+                ]
+            },
+            {
+                id: "pilier3",
+                title: "Conformité",
+                icon: "🛡️",
+                description: "Normes, Qualité et Biosécurité",
+                color: "bg-purple-100",
+                textColor: "text-purple-800",
+                objective: "Garantir que toutes les opérations soient conformes aux standards.",
+                content: [
+                    {
+                        title: "Systèmes qualité",
+                        details: [
+                            "ISO 9001 (qualité générale)",
+                            "ISO 15189 (laboratoires médicaux)",
+                            "ISO 13485 (dispositifs médicaux)"
+                        ]
+                    },
+                    {
+                        title: "Biosécurité et bio sûreté",
+                        details: [
+                            "Niveaux de confinement BSL-1 à BSL-4.",
+                            "Manipulation des agents pathogènes.",
+                            "Équipements de protection individuelle (EPI) et procédures de donning/doffing."
+                        ]
+                    },
+                    {
+                        title: "Traçabilité et documentation",
+                        details: [
+                            "Rédaction de SOP (Standard Operating Procedure).",
+                            "Gestion documentaire dans un LIMS."
+                        ]
+                    }
+                ],
+                resources: [
+                    "“Biosafety in Microbiological and Biomedical Laboratories” (CDC/NIH)",
+                    "Cours WHO Laboratory Quality Management System (LQMS)"
+                ]
+            },
+            {
+                id: "pilier4",
+                title: "Compétences",
+                icon: "🤝",
+                description: "Transversales et Gestion",
+                color: "bg-yellow-100",
+                textColor: "text-yellow-800",
+                objective: "Optimiser la communication, la gestion de projets et l’efficacité.",
+                content: [
+                    {
+                        title: "Communication technique",
+                        details: [
+                            "Rédaction de rapports techniques et non techniques.",
+                            "Présentation des résultats à des équipes multidisciplinaires."
+                        ]
+                    },
+                    {
+                        title: "Gestion de projets",
+                        details: [
+                            "Planification des maintenances et validations.",
+                            "Coordination avec fournisseurs et chercheurs."
+                        ]
+                    },
+                    {
+                        title: "Compétences numériques",
+                        details: [
+                            "Maîtrise des LIMS et bases de données.",
+                            "Notions de bio-informatique pour interpréter certaines données."
+                        ]
+                    }
+                ],
+                resources: []
+            },
+            {
+                id: "pilier5",
+                title: "Évolution",
+                icon: "📈",
+                description: "Formation Continue et Veille",
+                color: "bg-red-100",
+                textColor: "text-red-800",
+                objective: "Rester toujours à jour.",
+                content: [
+                    {
+                        title: "Veille technologique",
+                        details: [
+                            "Nouveaux équipements.",
+                            "Évolutions des normes."
+                        ]
+                    },
+                    {
+                        title: "Participation à des formations",
+                        details: [
+                            "Webinaires constructeurs.",
+                            "MOOC spécialisés (Institut Pasteur, WHO, Coursera)."
+                        ]
+                    },
+                    {
+                        title: "Réseautage",
+                        details: [
+                            "Conférences et congrès biomédicaux.",
+                            "Groupes professionnels LinkedIn."
+                        ]
+                    }
+                ],
+                resources: []
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const pillarsGrid = document.getElementById('pillars-grid');
+            const pillarsDetails = document.getElementById('pillars-details');
+
+            learningData.forEach((pillar, index) => {
+                const card = document.createElement('a');
+                card.href = `#${pillar.id}`;
+                card.className = `pillar-card ${pillar.color} p-6 rounded-xl flex flex-col items-center text-center shadow-md`;
+                card.innerHTML = `
+                    <div class="text-4xl mb-3">${pillar.icon}</div>
+                    <h3 class="text-lg font-bold ${pillar.textColor}">Pilier ${index + 1}</h3>
+                    <p class="font-semibold text-gray-700">${pillar.title}</p>
+                    <p class="text-sm text-gray-600 mt-1">${pillar.description}</p>
+                `;
+                pillarsGrid.appendChild(card);
+
+                const detailSection = document.createElement('section');
+                detailSection.id = pillar.id;
+                detailSection.className = 'mb-12 p-6 md:p-8 bg-white rounded-2xl shadow-lg';
+                
+                let contentHtml = `
+                    <h2 class="section-title text-3xl font-bold ${pillar.textColor} mb-4 flex items-center">
+                        <span class="text-5xl mr-4">${pillar.icon}</span>
+                        <span>Pilier ${index + 1}: ${pillar.title}</span>
+                    </h2>
+                    <p class="text-gray-600 italic mb-6">🎯 <strong>Objectif :</strong> ${pillar.objective}</p>
+                `;
+
+                pillar.content.forEach((item, itemIndex) => {
+                    contentHtml += `
+                        <div class="mb-4 border border-gray-200 rounded-lg">
+                            <button class="accordion-button w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg flex justify-between items-center transition-colors">
+                                <span class="font-semibold text-gray-700">${item.title}</span>
+                                <span class="transform transition-transform duration-300">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </span>
+                            </button>
+                            <div class="accordion-content">
+                                <ul class="list-disc list-inside p-4 text-gray-600 space-y-2">
+                                    ${item.details.map(detail => `<li>${detail}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if (pillar.resources.length > 0) {
+                    contentHtml += `
+                        <div class="mt-6">
+                            <h4 class="font-bold text-lg text-gray-700 mb-2">📚 Ressources Recommandées</h4>
+                            <ul class="list-none text-gray-600 space-y-1">
+                                ${pillar.resources.map(res => `<li><span class="text-indigo-500 mr-2">›</span>${res}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                detailSection.innerHTML = contentHtml;
+                pillarsDetails.appendChild(detailSection);
+            });
+            
+            setupAccordions();
+            setupChart();
+        });
+
+        function setupAccordions() {
+            const accordionButtons = document.querySelectorAll('.accordion-button');
+            accordionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const currentlyActive = document.querySelector('.accordion-button.active');
+                    if (currentlyActive && currentlyActive !== button) {
+                        currentlyActive.classList.remove('active');
+                        currentlyActive.querySelector('svg').style.transform = 'rotate(0deg)';
+                    }
+
+                    button.classList.toggle('active');
+                    const icon = button.querySelector('svg');
+                    if (button.classList.contains('active')) {
+                        icon.style.transform = 'rotate(180deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0deg)';
+                    }
+                });
+            });
+        }
+
+        function setupChart() {
+            const ctx = document.getElementById('pillarsChart').getContext('2d');
+            const data = {
+                labels: learningData.map(p => `Pilier ${learningData.indexOf(p) + 1}: ${p.title}`),
+                datasets: [{
+                    label: 'Nombre de sous-thèmes',
+                    data: learningData.map(p => p.content.length),
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.6)',
+                        'rgba(16, 185, 129, 0.6)',
+                        'rgba(139, 92, 246, 0.6)',
+                        'rgba(245, 158, 11, 0.6)',
+                        'rgba(239, 68, 68, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(139, 92, 246, 1)',
+                        'rgba(245, 158, 11, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+
+            const options = {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.x !== null) {
+                                    label += context.parsed.x;
+                                }
+                                return label;
+                            },
+                            afterLabel: function(context) {
+                                const pillarIndex = context.dataIndex;
+                                const objective = learningData[pillarIndex].objective;
+                                return `Objectif: ${objective}`;
+                            }
+                        },
+                        backgroundColor: '#333',
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 12 },
+                        padding: 10,
+                        displayColors: false,
+                        bodyAlign: 'left',
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Nombre de sous-thèmes principaux',
+                            font: {
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    }
+                }
+            };
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: options
+            });
+        }
+    </script>
+</body>
+</html>
